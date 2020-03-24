@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+  # Web service layer
+  node:
+    build:
+      context: nodejs
+    command: nodemon ./src/server.js
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./nodejs:/opt/cric/backend"
+      #  Anonymous volume to avoid overwritten by the mounting of the host directory at runtime.
+      - "/opt/cric/backend/node_modules"
+
+  # Data persistence service layer
+  db:
+    image: mysql:5.7.20
+    volumes:
+      - "./php/mysql/initial_data:/docker-entrypoint-initdb.d"
+      - "db_data:/var/lib/mysql"
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=cric_ufop
+      - MYSQL_ROOT_PASSWORD=123.456
+
+volumes:
+  db_data:

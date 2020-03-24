@@ -1,0 +1,6 @@
+[submodule "php"]
+	path = php
+	url = git@github.com:CRICDatabase/searchable-image-database-php.git
+[submodule "nodejs"]
+	path = nodejs
+	url = git@github.com:CRICDatabase/searchable-image-database-nodejs.git
