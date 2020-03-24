@@ -45,3 +45,16 @@ https://github.com/CRICDatabase/searchable-image-database-nodejs.
    ```
    $ docker-compose exec node node src/management/php2node.js
    ```
+
+## Tips for Developers
+
+1. Add new instructions to `src/management/php2node.js`.
+2. Before re-run `src/management/php2node.js`,
+   you must delete the existing information.
+
+   ```
+   $ docker-compose exec node npx sequelize db:drop
+   ```
+
+   If you do **not** do it,
+   you will duplicate part of the information.
