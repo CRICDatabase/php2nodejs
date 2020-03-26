@@ -1,9 +1,15 @@
 """
 Read the database from the PHP version and migrate the data to the Node.js version
 """
-import pymysql
+import sys
+
 import json
+import pymysql
 import requests
+
+# Function to log requests to Node.js REST API
+def print_url(r, *args, **kwargs):
+    print(r.url)
 
 # API Key
 headers = {
@@ -36,79 +42,64 @@ cursor = db.cursor()
 #     updated_at: 2018-05-20T00:37:59.000Z,
 #     created_at: 2018-09-30T22:56:08.000Z
 # }
-# cursor.execute("SELECT * FROM usuarios")
+cursor.execute("SELECT * FROM usuarios")
+data = cursor.fetchone()
+while(data is not None):
+    response = requests.post(
+        'http://localhost:3000/api/v1/usuarios-administrador',
+        headers=headers,
+        json={
+                "primeiro_nome": data[1],
+                "ultimo_nome": data[2],
+                "email": data[3],
+                "senha": data[4],
+                "ativo": 1,
+                "api_key": '123.456.789.0',
+                "nivel_acesso": 'TOTAL',
+            },
+        hooks={'response': print_url}
+    )
 
-# data = cursor.fetchone()
-# while(data is not None):
-#     response = requests.post(
-#         'http://localhost:3000/api/v1/usuarios-administrador',
-#         headers=headers,
-#         json={
-#                 "primeiro_nome": data[1],
-#                 "ultimo_nome": data[2],
-#                 "email": data[3],
-#                 "senha": data[4],
-#                 "ativo": 1,
-#                 "api_key": '123.456.789.0',
-#                 "nivel_acesso": 'TOTAL',
-#             },
-#     )
+    if response.status_code == 201:
+        print("Added {}".format(response.json()))
+    elif response.status_code in (403, 409):
+        print("Information already exist {}".format(data))
+    else:
+        print("Failed with {} to add {}\t\n{}".format(
+            response.status_code,
+            data,
+            response.json())
+        )
 
-#     if response.status_code == 201:
-#         print("Added {}".format(response.json()))
-#     else:
-#         print("Failed with {} to add {}\t\n{}".format(
-#             response.status_code,
-#             data,
-#             response.json())
-#         )
-        
+    data = cursor.fetchone()
 
-#     response = requests.post(
-#         'http://localhost:3000/api/api/v1/usuarios-citopatologista',
-#         headers=headers,
-#         json={
-#                 "primeiro_nome": data[1],
-#                 "ultimo_nome": data[2],
-#                 "email": data[3],
-#                 "senha": data[4],
-#                 "ativo": 1,
-#                 "codigo_crc": 'fake',
-#             },
-#     )
+# Add injury
+data = [
+            {
+                "nome": "LSIL",
+                "detalhes": "",
+            },
+]
+response = requests.post(
+    'http://localhost:3000/api/v1/imagens-lesoes/{}'.format(9),
+    headers=headers,
+    json=data,
+    hooks={'response': print_url}
+)
 
-#     if response.status_code == 201:
-#         print("Added {}".format(response.json()))
-#     else:
-#         print("Failed with {}".format(
-#             response.status_code
-#         ))
-
-#     # Read next line of database query
-#     data = cursor.fetchone()
-
-# Add lesion
-# response = requests.post(
-#     'http://localhost:3000/api/v1/imagens-lesoes/{}'.format(9),
-#     headers=headers,
-#     json=[
-#             {
-#                 "nome": "LSIL",
-#                 "detalhes": "",
-#             },
-#         ],
-# )
-
-# if response.status_code != 201:
-#     print("Added {}".format(response.json()))
-# else:
-#     print("Failed with {} to add lesion\t\n{}".format(
-#         response.status_code,
-#         response.json())
-#     )
-    
+if response.status_code == 201:
+    print("Added {}".format(response.json()))
+elif response.status_code in (403, 409):
+        print("Information already exist {}".format(data))
+else:
+    print("Failed with {} to add lesion\t\n{}".format(
+        response.status_code,
+        response.json())
+    )
 
 # Migrate images
+#
+# Example of data in the PHP version
 # {
 #     id: 1,
 #     nome: 'be340ee72689dfe3f8dc9c24de6127f4.jpg',
@@ -120,10 +111,7 @@ cursor = db.cursor()
 #     lamina: '2564 ',
 #     ano: '14'
 # }
-#
-# Example of data in the PHP version
 cursor.execute("SELECT * FROM imagem")
-
 data = cursor.fetchone()
 while(data is not None):
     response = requests.post(
@@ -138,11 +126,14 @@ while(data is not None):
             },
         files={
             'file': open('example0001.jpg', 'rb')
-        }
+        },
+        hooks={'response': print_url}
     )
 
     if response.status_code == 201:
         print("Added {}".format(response.json()))
+    elif response.status_code in (403, 409):
+        print("Information already exist {}".format(data))
     else:
         print("Failed with {} to add {}\t\n{}".format(
             response.status_code,
