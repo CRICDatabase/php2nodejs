@@ -11,7 +11,7 @@ https://github.com/CRICDatabase/searchable-image-database-php
 to
 https://github.com/CRICDatabase/searchable-image-database-nodejs.
 
-## Steps
+## Setup
 
 1. Clone the submodules.
 2. Download the database dump from the PHP version and save into `php/mysql/initial_data`.
@@ -19,6 +19,14 @@ https://github.com/CRICDatabase/searchable-image-database-nodejs.
 
    ```
    $ docker-compose up
+   ```
+
+   After the containers been created,
+   they will be running.
+   To stop the containers,
+
+   ```
+   $ docker-compose stop
    ```
 4. Create the database used by Node.js version. 
 
@@ -39,22 +47,34 @@ https://github.com/CRICDatabase/searchable-image-database-nodejs.
 
    ```
    > source DUMP_FILENAME;
-   ```
-6. Convert database
+6. Install Python dependencies
 
    ```
-   $ docker-compose exec node node src/management/php2node.js
+   $ python -m pip install -r requirements.txt
+   ```
+
+## Steps
+
+1. Launch the containers.
+
+   ```
+   $ docker-compose start
+   ```
+2. Convert database
+
+   ```
+   $ python php2node.py
    ```
 
 ## Tips for Developers
 
-1. Add new instructions to `src/management/php2node.js`.
-2. Before re-run `src/management/php2node.js`,
-   you must delete the existing information.
+1. Add new instructions to `php2node.py`.
+
+   We use the REST API to access the database.
+   The documentation of the REST API is available at https://cric-database.readthedocs.io/.
+2. If you need to delete existing information,
+   run
 
    ```
    $ docker-compose exec node npx sequelize db:drop
    ```
-
-   If you do **not** do it,
-   you will duplicate part of the information.
