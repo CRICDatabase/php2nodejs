@@ -16,4 +16,4 @@ docker-compose exec node npx sequelize db:seed --seed 20200501010000-php2nodejs-
 docker-compose exec node npx sequelize db:seed --seed 20200501020000-php2nodejs-cytopathologist.js
 docker-compose exec node npx sequelize db:seed --seed 20200501030000-php2nodejs-analyst.js
 # Run migration.
-python php2nodejs.py
+python php2nodejs.py --all

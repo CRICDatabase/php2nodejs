@@ -34,7 +34,7 @@ https://github.com/CRICDatabase/searchable-image-database-nodejs.
    $ docker-compose exec node npx sequelize db:create
    $ docker-compose exec node npx sequelize db:migrate
    ```
-5. Check that databas used by PHP version exists.
+5. Check that database `cric_ufop` used by PHP version exists.
 
    ```
    $ docker-compose exec db /bin/bash
@@ -63,8 +63,17 @@ https://github.com/CRICDatabase/searchable-image-database-nodejs.
 2. Convert database
 
    ```
-   $ python php2node.py
+   $ python php2node.py --all
    ```
+
+   This will take a couple of hours.
+   Instead of access both database directly,
+   we access the database used by PHP
+   and use the Node.js REST API
+   to recreate the database.
+   Use HTTP makes the migration very slow
+   but allow us to test the Node.js REST API
+   and ensure us that our data is in a good state.
 
 ## Tips for Developers
 
