@@ -12,7 +12,8 @@ import requests
 def print_url(r, *args, **kwargs):
     print(r.url)
 
-# API Key
+# REST API
+REST_API_URL = "http://api.database.cric.com"
 headers = {
     'token_autenticacao': 'bac8db9147ac80b4ba8a05bb0de7c4fd'
 }
@@ -61,7 +62,7 @@ def add_users():
         #     hooks={'response': print_url}
         # )
         response = requests.post(
-            'http://localhost:3000/api/v1/usuarios-citopatologista',
+            '{}/api/v1/usuarios-citopatologista'.format(REST_API_URL),
             headers=headers,
             json={
                     "primeiro_nome": data[1],
@@ -88,7 +89,8 @@ def add_users():
             )
 
         response = requests.post(
-            'http://localhost:3000/api/v1/usuarios/analista/{}'.format(
+            '{}/api/v1/usuarios/analista/{}'.format(
+                REST_API_URL,
                 user_id
             ),
             headers=headers,
@@ -166,7 +168,7 @@ def add_images():
             year = "2020"
 
         response = requests.post(
-            'http://localhost:3000/api/v1/imagens',
+            '{}/api/v1/imagens'.format(REST_API_URL),
             headers=headers,
             # Note, the json parameter is ignored if either data or files is passed.
             data={
@@ -176,7 +178,10 @@ def add_images():
                     "dt_aquisicao": '{}-01-01'.format(year),
                 },
             files={
-                'file': open('images/{}'.format(data[1]), 'rb')
+                'file': open(
+                    'images/{}'.format(data[1].replace(".jpg", ".tif")),  # Important to have high resolution images
+                    'rb'
+                )
             },
             hooks={'response': print_url}
         )
@@ -199,7 +204,8 @@ def add_images():
 
 def add_classification():
     imagens = requests.get(
-        'http://localhost:3000/api/v1/imagens/listar/{}'.format(
+        '{}/api/v1/imagens/listar/{}'.format(
+            REST_API_URL,
             1  # Use special user for migration
         ),
         headers=headers,
@@ -207,7 +213,6 @@ def add_classification():
     )
 
     for imagem in imagens.json():
-        print(imagem)
         # Migrate table imagem_nucleos
         #
         # Example of data in the PHP version
@@ -236,8 +241,6 @@ def add_classification():
         ))
         data = cursor.fetchone()
         while(data is not None):
-            print(data)
-
             # Mapping from php/src/intra/nucleos_imagem.php
             # <select id="nucleoTipo" onchange="mudaTipo(this.value);">
             # <option value="0">Normal</option>
@@ -266,7 +269,8 @@ def add_classification():
                 injury = 7
 
             response = requests.post(
-                'http://localhost:3000/api/v1/imagens/{}/classificacao-celula/{}'.format(
+                '{}/api/v1/imagens/{}/classificacao-celula/{}'.format(
+                    REST_API_URL,
                     imagem["id"],  # id_imagem
                     1  # Use special user for migration 
                 ),
@@ -275,10 +279,10 @@ def add_classification():
                     "id_lesao": injury,
                     "coord_centro_nucleo_x": data[1],
                     "coord_centro_nucleo_y": data[2],
-                    "alturaCanvas": 1388,  # Provided by Mariana
-                    "larguraCanvas": 1040,  # Provided by Mariana
-                    "alturaOriginalImg": 1388,  # Provided by Mariana
-                    "larguraOriginalImg": 1040  # Provided by Mariana
+                    "alturaCanvas": imagem["altura"],
+                    "larguraCanvas": imagem["largura"],
+                    "alturaOriginalImg": imagem["altura"],
+                    "larguraOriginalImg": imagem["largura"],
                 },
                 hooks={'response': print_url}
             )
@@ -309,7 +313,8 @@ def add_classification():
 
 def add_segmentation():
     imagens = requests.get(
-        'http://localhost:3000/api/v1/imagens/listar/{}'.format(
+        '{}/api/v1/imagens/listar/{}'.format(
+            REST_API_URL,
             1  # Use special user for migration
         ),
         headers=headers,
@@ -564,7 +569,8 @@ def add_segmentation():
                 description = 84  
 
             response = requests.post(
-                'http://localhost:3000/api/v1/imagens/{}/segmentacao-celula/{}'.format(
+                '{}/api/v1/imagens/{}/segmentacao-celula/{}'.format(
+                    REST_API_URL,
                     imagem["id"],  # id_imagem
                     1  # Use special user for migration
                 ),
