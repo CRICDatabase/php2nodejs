@@ -139,23 +139,18 @@ def add_images():
         if data[0] > 470:  # We don't want to upload images from `photos` directory
             break
 
-        try:
-            if data[2] == "Negativa":
-                injury = 1
-            if data[2] == "ASC-US":
-                injury = 2
-            elif data[2] == "LSIL":
-                injury = 3
-            elif data[2] == "ASC-H":
-                injury = 4
-            elif data[2] == "HSIL":
-                injury = 5
-            elif data[2] == "Carcinoma" or data[2] == "ca":
-                injury = 6
-            else:
-                injury = 7
-        except:
-            injury = 7
+        if data[2] == "Negativa":
+            injury = 1
+        if data[2] == "ASC-US":
+            injury = 2
+        elif data[2] == "LSIL":
+            injury = 3
+        elif data[2] == "ASC-H":
+            injury = 4
+        elif data[2] == "HSIL":
+            injury = 5
+        elif data[2] == "Carcinoma" or data[2] == "ca":
+            injury = 6
 
         try:
             if len(data[8]) == 2:
