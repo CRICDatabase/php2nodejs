@@ -13,7 +13,7 @@ def print_url(r, *args, **kwargs):
     print(r.url)
 
 # REST API
-REST_API_URL = "http://api.database.cric.com"
+REST_API_URL = "http://api.database.cric.com.br"
 headers = {
     'token_autenticacao': 'bac8db9147ac80b4ba8a05bb0de7c4fd'
 }
@@ -79,6 +79,7 @@ def add_users():
             print("Added {}".format(response.json()))
         elif response.status_code == 403:
             print("Invalid request {}".format(data))
+            error_log.write("User: {}".format(data))
         elif response.status_code == 409:
             print("Information already exist {}".format(data))
         else:
@@ -87,6 +88,7 @@ def add_users():
                 data,
                 response.json())
             )
+            error_log.write("User: {}".format(data))
 
         response = requests.post(
             '{}/api/v1/usuarios/analista/{}'.format(
@@ -130,11 +132,18 @@ def add_images():
     # }
     cursor.execute(
         """SELECT * FROM imagem """
-        """WHERE excluido = 0"""
+        """WHERE """
+        """excluido = 0 """
+        """AND """
+        """aprovado_classificacao = 1"""
     )
     data = cursor.fetchone()
     while(data is not None):
-        print(data)
+        print(
+            """Adding image {} ...""".format(
+                data[1]
+            )
+        )
 
         if data[0] > 470:  # We don't want to upload images from `photos` directory
             break
@@ -172,9 +181,11 @@ def add_images():
                     "codigo_lamina": data[7],
                     "dt_aquisicao": '{}-01-01'.format(year),
                 },
+            # cut-images must have all images in the same siz: 1376x1020
+            # The PHP version stored JPG files but we will upload the TIF files
             files={
                 'file': open(
-                    'images/{}'.format(data[1].replace(".jpg", ".tif")),  # Important to have high resolution images
+                    'cut-images/{}'.format(data[1].replace(".jpg", ".tif")),  # Important to have high resolution images
                     'rb'
                 )
             },
@@ -185,14 +196,16 @@ def add_images():
             print("Added {}".format(response.json()))
         elif response.status_code == 403:
             print("Invalid request {}".format(data))
+            error_log.write("Image: {}".format(data))
         elif response.status_code == 409:
             print("Information already exist {}".format(data))
         else:
             print("Failed with {} to add {}\t\n{}".format(
                 response.status_code,
                 data,
-                response.json())
+                response)
             )
+            error_log.write("Image: {}".format(data))
 
         # Read next line of database query
         data = cursor.fetchone()
@@ -208,6 +221,11 @@ def add_classification():
     )
 
     for imagem in imagens.json():
+        print(
+            """Processing classifications from {}""".format(
+                imagem["nome"]
+            )
+        )
         # Migrate table imagem_nucleos
         #
         # Example of data in the PHP version
@@ -231,8 +249,10 @@ def add_classification():
             """INNER JOIN imagem ON imagem_nucleos.id_imagem = imagem.id """
             """WHERE nome = '{}' AND """
             """imagem_nucleos.id_usuario = 15 AND """
-            """imagem_nucleos.excluido = 0""".format(
-                imagem["nome"]
+            """imagem_nucleos.excluido = 0 AND """
+            """x < 1376 AND """
+            """y < 1020""".format(
+                imagem["nome"].replace(".tif", ".jpg")
         ))
         data = cursor.fetchone()
         while(data is not None):
@@ -286,6 +306,7 @@ def add_classification():
                 print("Added {}".format(response.json()))
             elif response.status_code == 403:
                 print("Invalid request {}".format(response.request.body))
+                error_log.write("Classification: {}".format(data))
             elif response.status_code == 409:
                 print("Information already exist {}".format(response.request.body))
             else:
@@ -293,6 +314,7 @@ def add_classification():
                     response.status_code,
                     response.request.body)
                 )
+                error_log.write("Classification: {}".format(data))
 
             # Read next line of database query
             data = cursor.fetchone()
@@ -339,7 +361,7 @@ def add_segmentation():
             """WHERE nome = '{}' AND """ \
             """imagem_segmentos.id_usuario = 9 AND """ \
             """imagem_segmentos.excluido = 0""".format(
-                imagem["nome"]
+                imagem["nome"].replace(".tif", ".jpg")
         ))
         data = cursor.fetchone()
         while(data is not None):
@@ -357,7 +379,9 @@ def add_segmentation():
             cursor_aux.execute(
                 """SELECT * """
                 """FROM coordenadas_segmento """
-                """WHERE id_segmento = {}""".format(
+                """WHERE id_segmento = {} AND"""
+                """x < 1376 AND """
+                """y < 1020""".format(
                     data[0]
                 )
             )
@@ -379,7 +403,9 @@ def add_segmentation():
             cursor_aux.execute(
                 """SELECT * """
                 """FROM coordenadas_nucleo """
-                """WHERE id_segmento = {}""".format(
+                """WHERE id_segmento = {} AND"""
+                """x < 1376 AND """
+                """y < 1020""".format(
                     data[0]
                 )
             )
@@ -572,10 +598,10 @@ def add_segmentation():
                 headers=headers,
                 json={
                     "id_descricao": description,
-                    "alturaCanvas": 1388,  # Provided by Mariana
-                    "larguraCanvas": 1040,  # Provided by Mariana
-                    "alturaOriginalImg": 1388,  # Provided by Mariana
-                    "larguraOriginalImg": 1040,  # Provided by Mariana
+                    "alturaCanvas": imagem["altura"],
+                    "larguraCanvas": imagem["largura"],
+                    "alturaOriginalImg": imagem["altura"],
+                    "larguraOriginalImg": imagem["largura"],
                     "segmentos_citoplasma": segmentos_citoplasma,
                     "segmentos_nucleo": segmentos_nucleo,
                 },
@@ -586,6 +612,7 @@ def add_segmentation():
                 print("Added".format(response.json()))
             elif response.status_code == 403:
                 print("Invalid request {}".format(response.request.body))
+                error_log.write("Segmentation: {}".format(data))
             elif response.status_code == 409:
                 print("Information already exist {}".format(response.request.body))
             else:
@@ -593,6 +620,7 @@ def add_segmentation():
                     response.status_code,
                     response.request.body)
                 )
+                error_log.write("Segmentation: {}".format(data))
 
             print("\tFinished with segmentation {}".format(data))
             # Read next line of database query
@@ -644,14 +672,15 @@ if __name__ == '__main__':
     cursor = db.cursor()
     cursor_aux = db.cursor()
 
-    if args.users or args.all:
-        add_users()
-    if args.images or args.all:
-        add_images()
-    if args.classification or args.all:
-        add_classification()
-    if args.segmentation or args.all:
-        add_segmentation()
+    with open("error.log", "w") as error_log:
+        if args.users or args.all:
+            add_users()
+        if args.images or args.all:
+            add_images()
+        if args.classification or args.all:
+            add_classification()
+        if args.segmentation or args.all:
+            add_segmentation()
 
     # disconnect from server
     db.close()
