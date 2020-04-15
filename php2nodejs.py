@@ -13,7 +13,7 @@ def print_url(r, *args, **kwargs):
     print(r.url)
 
 # REST API
-REST_API_URL = "http://api.database.cric.com.br"
+REST_API_URL = None
 headers = {
     'token_autenticacao': 'bac8db9147ac80b4ba8a05bb0de7c4fd'
 }
@@ -80,6 +80,7 @@ def add_users():
         elif response.status_code == 403:
             print("Invalid request {}".format(data))
             error_log.write("User: {}".format(data))
+            raise Exception("Failed in user")
         elif response.status_code == 409:
             print("Information already exist {}".format(data))
         else:
@@ -89,6 +90,7 @@ def add_users():
                 response.json())
             )
             error_log.write("User: {}".format(data))
+            raise Exception("Failed in user")
 
         response = requests.post(
             '{}/api/v1/usuarios/analista/{}'.format(
@@ -145,21 +147,27 @@ def add_images():
             )
         )
 
-        if data[0] > 470:  # We don't want to upload images from `photos` directory
-            break
-
-        if data[2] == "Negativa":
+        if data[2].strip() == "Negativa":
             injury = 1
-        if data[2] == "ASC-US":
+        if data[2].strip() == "ASC-US":
             injury = 2
-        elif data[2] == "LSIL":
+        elif data[2].strip() == "LSIL":
             injury = 3
-        elif data[2] == "ASC-H":
+        elif data[2].strip() == "ASC-H":
             injury = 4
-        elif data[2] == "HSIL":
+        elif data[2].strip() == "HSIL":
             injury = 5
-        elif data[2] == "Carcinoma" or data[2] == "ca":
+        elif data[2].strip() == "Carcinoma" or data[2] == "ca":
             injury = 6
+        else:
+            injury = 1
+            print(
+                """Image classification {} unknow. Using Negativa\n"""
+                """\t{}""".format(
+                    data[2],
+                    data
+                )
+            )
 
         try:
             if len(data[8]) == 2:
@@ -185,7 +193,7 @@ def add_images():
             # The PHP version stored JPG files but we will upload the TIF files
             files={
                 'file': open(
-                    'cut-images/{}'.format(data[1].replace(".jpg", ".tif")),  # Important to have high resolution images
+                    'images-cut/{}'.format(data[1].replace(".jpg", ".png")),  # Important to have high resolution images
                     'rb'
                 )
             },
@@ -197,6 +205,7 @@ def add_images():
         elif response.status_code == 403:
             print("Invalid request {}".format(data))
             error_log.write("Image: {}".format(data))
+            raise Exception("Failed in image")
         elif response.status_code == 409:
             print("Information already exist {}".format(data))
         else:
@@ -206,6 +215,7 @@ def add_images():
                 response)
             )
             error_log.write("Image: {}".format(data))
+            raise Exception("Failed in image")
 
         # Read next line of database query
         data = cursor.fetchone()
@@ -252,7 +262,7 @@ def add_classification():
             """imagem_nucleos.excluido = 0 AND """
             """x < 1376 AND """
             """y < 1020""".format(
-                imagem["nome"].replace(".tif", ".jpg")
+                imagem["nome"].replace(".png", ".jpg")
         ))
         data = cursor.fetchone()
         while(data is not None):
@@ -265,23 +275,26 @@ def add_classification():
             # <option value="4">HSIL</option>
             # <option value="5">Carcinoma</option>
             # </select>
-            try:
-                if data[3] == 0:  # "Normal"
-                    injury = 1
-                if data[3] == 1:  # "ASC-US"
-                    injury = 2
-                elif data[3] == 2:  # "LSIL"
-                    injury = 3
-                elif data[3] == 3:  # "ASC-H"
-                    injury = 4
-                elif data[3] == 4:  # "HSIL"
-                    injury = 5
-                elif data[3] == 5:  # "Carcinoma"
-                    injury = 6
-                else:
-                    injury = 7
-            except:
-                injury = 7
+            if data[3] == 0:  # "Normal"
+                injury = 1
+            if data[3] == 1:  # "ASC-US"
+                injury = 2
+            elif data[3] == 2:  # "LSIL"
+                injury = 3
+            elif data[3] == 3:  # "ASC-H"
+                injury = 4
+            elif data[3] == 4:  # "HSIL"
+                injury = 5
+            elif data[3] == 5:  # "Carcinoma"
+                injury = 6
+            else:
+                injury = 1
+                print("""Nuclei classification {} unknow. Using 0.\n"""
+                    """\t{}""".format(
+                        data[3],
+                        data
+                    )
+                )
 
             response = requests.post(
                 '{}/api/v1/imagens/{}/classificacao-celula/{}'.format(
@@ -307,6 +320,7 @@ def add_classification():
             elif response.status_code == 403:
                 print("Invalid request {}".format(response.request.body))
                 error_log.write("Classification: {}".format(data))
+                raise Exception("Failed in classification")
             elif response.status_code == 409:
                 print("Information already exist {}".format(response.request.body))
             else:
@@ -315,6 +329,7 @@ def add_classification():
                     response.request.body)
                 )
                 error_log.write("Classification: {}".format(data))
+                raise Exception("Failed in classification")
 
             # Read next line of database query
             data = cursor.fetchone()
@@ -361,7 +376,7 @@ def add_segmentation():
             """WHERE nome = '{}' AND """ \
             """imagem_segmentos.id_usuario = 9 AND """ \
             """imagem_segmentos.excluido = 0""".format(
-                imagem["nome"].replace(".tif", ".jpg")
+                imagem["nome"].replace(".png", ".jpg")
         ))
         data = cursor.fetchone()
         while(data is not None):
@@ -613,6 +628,7 @@ def add_segmentation():
             elif response.status_code == 403:
                 print("Invalid request {}".format(response.request.body))
                 error_log.write("Segmentation: {}".format(data))
+                raise Exception("Failed in segmentation")
             elif response.status_code == 409:
                 print("Information already exist {}".format(response.request.body))
             else:
@@ -621,6 +637,7 @@ def add_segmentation():
                     response.request.body)
                 )
                 error_log.write("Segmentation: {}".format(data))
+                raise Exception("Failed in segmentation")
 
             print("\tFinished with segmentation {}".format(data))
             # Read next line of database query
@@ -641,6 +658,11 @@ def add_segmentation():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Migrate data to new schema.')
+    parser.add_argument(
+        '--host',
+        default="http://localhost:3000",
+        help='Host where the information will be send'
+    )
     parser.add_argument(
         '--all',
         action='store_true',
@@ -667,6 +689,8 @@ if __name__ == '__main__':
         help='Migrate cell classification information'
     )
     args = parser.parse_args()
+
+    REST_API_URL = args.host
 
     # prepare a cursor object using cursor() method
     cursor = db.cursor()

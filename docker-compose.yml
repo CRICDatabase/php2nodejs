@@ -4,6 +4,7 @@ services:
   node:
     build:
       context: nodejs
+      target: development
     command: nodemon ./src/server.js
     ports:
       - "3000:3000"

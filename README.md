@@ -81,6 +81,15 @@ https://github.com/CRICDatabase/searchable-image-database-nodejs.
 
    We use the REST API to access the database.
    The documentation of the REST API is available at https://cric-database.readthedocs.io/.
+3. If you have a new database dump,
+   save it into `php/mysql/initial_data`
+   will **not** be enough.
+   You need to delete the volume used by Docker:
+
+   ```
+   $ docker volume ls
+   $ docker volume rm VOLUME
+   ```
 2. If you need to delete existing information,
    run
 
