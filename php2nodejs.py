@@ -394,7 +394,7 @@ def add_segmentation():
             cursor_aux.execute(
                 """SELECT * """
                 """FROM coordenadas_segmento """
-                """WHERE id_segmento = {} AND"""
+                """WHERE id_segmento = {} AND """
                 """x < 1376 AND """
                 """y < 1020""".format(
                     data[0]
@@ -418,7 +418,7 @@ def add_segmentation():
             cursor_aux.execute(
                 """SELECT * """
                 """FROM coordenadas_nucleo """
-                """WHERE id_segmento = {} AND"""
+                """WHERE id_segmento = {} AND """
                 """x < 1376 AND """
                 """y < 1020""".format(
                     data[0]
@@ -603,6 +603,18 @@ def add_segmentation():
                 description = 83
             elif data[2] == 131323:
                 description = 84  
+
+            if len(segmentos_citoplasma) == 0 or len(segmentos_nucleo) == 0:
+                print("""\tlen(segmentos_citoplasma) == {}\n"""
+                      """\tlen(segmentos_nucleo) == {}\n"""
+                      """\tSkipping\n"""
+                      """\tFinished with segmentation {}""".format(
+                          len(segmentos_citoplasma),
+                          len(segmentos_nucleo),
+                          data
+                ))
+                data = cursor.fetchone()
+                continue
 
             response = requests.post(
                 '{}/api/v1/imagens/{}/segmentacao-celula/{}'.format(
