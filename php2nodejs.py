@@ -382,6 +382,46 @@ def add_segmentation():
         while(data is not None):
             print("\tBegin processing segmentation {}".format(data))
 
+            points_cutted = cursor_aux.execute(
+                """SELECT * """
+                """FROM coordenadas_segmento """
+                """WHERE id_segmento = {} AND """
+                """(x >= 1376 OR """
+                """y >= 1020)""".format(
+                    data[0]
+                )
+            )
+            if points_cutted > 0:
+                print("""\t{} coordenadas_segmentos will be removed\n"""
+                      """\tSkipping\n"""
+                      """\tFinished with segmentation {}""".format(
+                          len(segmentos_citoplasma),
+                          len(segmentos_nucleo),
+                          data
+                ))
+                data = cursor.fetchone()
+                continue
+
+            points_cutted = cursor_aux.execute(
+                """SELECT * """
+                """FROM coordenadas_nucleo """
+                """WHERE id_segmento = {} AND """
+                """(x >= 1376 OR """
+                """y >= 1020)""".format(
+                    data[0]
+                )
+            )
+            if points_cutted > 0:
+                print("""\t{} coordenadas_nucleo will be removed\n"""
+                      """\tSkipping\n"""
+                      """\tFinished with segmentation {}""".format(
+                          len(segmentos_citoplasma),
+                          len(segmentos_nucleo),
+                          data
+                ))
+                data = cursor.fetchone()
+                continue
+
             # Migrate table coordenadas_segmento
             #
             # Example of data in the PHP version
